@@ -1,5 +1,5 @@
 <?php
-require_once 'config/db.php'; // include your PDO connection file
+require_once 'config/db.php';
 
 try {
     $stmt = $conn->query("SELECT * FROM students ORDER BY id DESC");
@@ -92,7 +92,7 @@ try {
                     <td><?= htmlspecialchars($row['contact']) ?></td>
                     <td><?= htmlspecialchars($row['date_added']) ?></td>
                     <td>
-                        <a href="edit.php?id=<?= $row['id'] ?>" class="btn">Edit</a>
+                        <a href="update.php?id=<?= $row['id'] ?>" class="btn">Edit</a>
                         <a href="delete.php?id=<?= $row['id'] ?>" class="btn delete">Delete</a>
                     </td>
                 </tr>

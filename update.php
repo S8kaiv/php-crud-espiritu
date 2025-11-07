@@ -1,7 +1,24 @@
 <?php
 require 'config/db.php';
 
+if (!isset($_GET['id'])) {
+    die("Error: Student ID not provided.");
+}
+
+$id = $_GET['id'];
 $message = "";
+
+try {
+    $stmt = $conn->prepare("SELECT * FROM students WHERE id = :id LIMIT 1");
+    $stmt->execute([':id' => $id]);
+    $student = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$student) {
+        die("Error: Student not found.");
+    }
+} catch (PDOException $e) {
+    die("Error fetching student: " . $e->getMessage());
+}
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -12,20 +29,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $contact = $_POST['contact'];
 
     try {
-        $sql = "INSERT INTO students (student_no, fullname, branch, email, contact)
-                VALUES (:student_no, :fullname, :branch, :email, :contact)";
+        $sql = "UPDATE students 
+                SET student_no = :student_no, fullname = :fullname, branch = :branch, 
+                    email = :email, contact = :contact 
+                WHERE id = :id";
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             ':student_no' => $student_no,
             ':fullname' => $fullname,
             ':branch' => $branch,
             ':email' => $email,
-            ':contact' => $contact
+            ':contact' => $contact,
+            ':id' => $id
         ]);
 
-        $message = "<p class='success message'>Student added successfully!</p>";
+        $message = "<p class='success message'>Student record updated successfully!</p>";
+
+        // Redirect after 2 seconds
+        header("refresh:2;url=read.php");
     } catch (PDOException $e) {
-        $message = "<p class='error message'>Error: " . $e->getMessage() . "</p>";
+        $message = "<p class='error message'>Error updating student: " . $e->getMessage() . "</p>";
     }
 }
 ?>
@@ -34,7 +57,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Add Student</title>
+    <title>Update Student</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -84,7 +107,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             margin-top: 15px;
             width: 100%;
             padding: 10px;
-            background: #007BFF;
+            background: #007bffff;
             border: none;
             color: white;
             font-weight: bold;
@@ -92,7 +115,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             cursor: pointer;
         }
         button:hover {
-            background: #0056b3;
+            background: #0161c7ff;
         }
         .success { color: green; text-align: center; font-weight: bold; }
         .error { color: red; text-align: center; font-weight: bold; }
@@ -115,34 +138,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body>
 
 <div class="container">
-    <h2>Add Student</h2>
+    <h2>Update Student</h2>
     <?= $message; ?>
 
     <form method="POST" action="">
         <label>Student Number:</label>
-        <input type="text" name="student_no" required>
+        <input type="text" name="student_no" value="<?= htmlspecialchars($student['student_no']); ?>" required>
 
         <label>Full Name:</label>
-        <input type="text" name="fullname" required>
+        <input type="text" name="fullname" value="<?= htmlspecialchars($student['fullname']); ?>" required>
 
         <label>Branch:</label>
         <select name="branch" required>
             <option value="">-- Select Branch --</option>
-            <option value="Quezon City">Quezon City</option>
-            <option value="Antipolo">Antipolo</option>
-            <option value="Guimba">Guimba</option>
+            <option value="Quezon City" <?= $student['branch'] === 'Quezon City' ? 'selected' : ''; ?>>Quezon City</option>
+            <option value="Antipolo" <?= $student['branch'] === 'Antipolo' ? 'selected' : ''; ?>>Antipolo</option>
+            <option value="Guimba" <?= $student['branch'] === 'Guimba' ? 'selected' : ''; ?>>Guimba</option>
         </select>
 
         <label>Email:</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" value="<?= htmlspecialchars($student['email']); ?>" required>
 
         <label>Contact:</label>
-        <input type="text" name="contact">
+        <input type="text" name="contact" value="<?= htmlspecialchars($student['contact']); ?>">
 
-        <button type="submit">Add Student</button>
+        <button type="submit">Update Student</button>
     </form>
 
-    <a href="index.php" class="back-link">← Back to Homepage</a>
+    <a href="read.php" class="back-link">← Back to Student List</a>
 </div>
 
 <script>
@@ -152,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function() {
         setTimeout(() => {
             msg.style.opacity = "0";
             setTimeout(() => msg.remove(), 500);
-        }, 3000); // hide after 3 seconds
+        }, 3000);
     }
 });
 </script>
